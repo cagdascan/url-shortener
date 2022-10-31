@@ -2,18 +2,64 @@ import { type NextPage } from "next";
 import { useState } from "react";
 
 import { trpc } from "../utils/trpc";
+import { Field, Form, Formik } from "formik";
+import type { FormikHelpers } from "formik";
+import type { DateFromISOStringC } from "io-ts-types/lib/DateFromISOString";
+import { copyTextToClipboard } from "../utils/copyToClipboard";
+
+interface CreateRequest {
+  longUrl: string;
+  customAlias?: string;
+  expireAt?: DateFromISOStringC;
+}
+interface CreateRequestErrors {
+  longUrl?: string;
+  customAlias?: string;
+  expireAt?: DateFromISOStringC;
+}
+
+const initialFormValues: CreateRequest = {
+  longUrl: "",
+  customAlias: "",
+  expireAt: "",
+};
+
+const validateFunction = (values: CreateRequest) => {
+  const errors: CreateRequestErrors = {};
+  if (!values.longUrl) {
+    errors.longUrl = "Required";
+  }
+  console.log(errors);
+  return errors;
+};
+
+const REDIRECT_HOST = "https://host";
 
 const Home: NextPage = () => {
-  const [alias, setAlias] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
 
-  const shorten = trpc.example.shorten.useMutation({
-    onSuccess: (data) => {
-      setAlias(data.shortened);
-    },
-  });
+  const shorten = trpc.example.shorten.useMutation();
 
-  const handleClick = () => {
-    shorten.mutate({ url: "https://trpc.io" });
+  const handleShortenAnother = (resetForm: () => void) => {
+    setSubmitted(false);
+    resetForm();
+  };
+
+  const handleCopy = (value: string) => {
+    let timer = 0;
+    if (!timer) {
+      copyTextToClipboard(value);
+      setCopied(true);
+      timer = window.setTimeout(() => {
+        setCopied(false);
+      }, 1000);
+    }
+  };
+
+  const handleLaunch = (value: string) => {
+    window.open(value, "_blank");
   };
 
   return (
@@ -21,24 +67,108 @@ const Home: NextPage = () => {
       <div>Shorten your links</div>
       <div>Create and monitor your links. It’s secure, fast and free.</div>
       <div className="mt-4 flex w-1/4 flex-col">
-        <input
-          type="text"
-          id="alias"
-          className="mb-2 bg-white text-slate-900"
-        />
-        <input
-          type="text"
-          id="url"
-          className="mb-2 bg-white text-slate-900"
-          value={alias}
-        />
-        <button
-          type="button"
-          className="bg-indigo-600 text-white"
-          onClick={handleClick}
+        <Formik
+          initialValues={initialFormValues}
+          validate={validateFunction}
+          onSubmit={(
+            values: CreateRequest,
+            {
+              setSubmitting,
+              setFieldValue,
+            }: // setErrors,
+            FormikHelpers<CreateRequest>
+          ) => {
+            console.log("xxx");
+            setError("");
+            shorten.mutate(values, {
+              onError: (error) => {
+                setError(error.message);
+              },
+              onSuccess: (data) => {
+                setFieldValue("longUrl", `${REDIRECT_HOST}/${data.shortened}`);
+                setFieldValue("customAlias", data.shortened);
+                setSubmitted(true);
+                // TODO: is this needed?
+                // addAlias({
+                //   alias: response.alias,
+                //   createdAt: new Date().toISOString(),
+                //   longUrl: values.longUrl,
+                // });
+              },
+              onSettled: () => {
+                setSubmitting(false);
+              },
+            });
+          }}
         >
-          Shorten
-        </button>
+          {({ values, isSubmitting, isValid, resetForm, dirty }) => (
+            <Form>
+              <div>
+                <Field
+                  name="longUrl"
+                  placeholder="Type or paste your link"
+                  maxLength={2000}
+                  disabled={submitted}
+                />
+              </div>
+              <div>
+                <div>
+                  <Field
+                    name="customAlias"
+                    placeholder="alias"
+                    disabled={submitted}
+                    maxLength={128}
+                  />
+                </div>
+                <div>
+                  <Field
+                    name="expireTime"
+                    type="date"
+                    placeholder="expiry date"
+                    disabled={submitted}
+                  />
+                </div>
+              </div>
+              {!submitted ? (
+                <div>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || (!isValid && !dirty)}
+                  >
+                    {isSubmitting ? "..." : "Shorten"}
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <div>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleLaunch(values.longUrl);
+                      }}
+                    >
+                      launch
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleCopy(values.longUrl);
+                      }}
+                    >
+                      {copied ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                  <div>
+                    <button onClick={() => handleShortenAnother(resetForm)}>
+                      Shorten another
+                    </button>
+                  </div>
+                </div>
+              )}
+              <div>{error}</div>
+            </Form>
+          )}
+        </Formik>
       </div>
     </div>
   );
