@@ -1,22 +1,11 @@
 import { type NextPage } from "next";
 import { useState } from "react";
 
-import { trpc } from "../utils/trpc";
-import { Field, Form, Formik } from "formik";
 import type { FormikHelpers } from "formik";
-import type { DateFromISOStringC } from "io-ts-types/lib/DateFromISOString";
+import { Field, Form, Formik } from "formik";
+import type { CreateRequest, CreateRequestErrors } from "../types/url.types";
 import { copyTextToClipboard } from "../utils/copyToClipboard";
-
-interface CreateRequest {
-  longUrl: string;
-  customAlias?: string;
-  expireAt?: DateFromISOStringC;
-}
-interface CreateRequestErrors {
-  longUrl?: string;
-  customAlias?: string;
-  expireAt?: DateFromISOStringC;
-}
+import { trpc } from "../utils/trpc";
 
 const initialFormValues: CreateRequest = {
   longUrl: "",
@@ -66,7 +55,7 @@ const Home: NextPage = () => {
     <div className="flex h-full min-h-screen w-full flex-col items-center justify-center bg-slate-900 pt-6 text-2xl text-slate-300">
       <div>Shorten your links</div>
       <div>Create and monitor your links. It’s secure, fast and free.</div>
-      <div className="mt-4 flex w-1/4 flex-col">
+      <div className="mt-4 flex max-w-2xl flex-col">
         <Formik
           initialValues={initialFormValues}
           validate={validateFunction}
@@ -103,35 +92,40 @@ const Home: NextPage = () => {
         >
           {({ values, isSubmitting, isValid, resetForm, dirty }) => (
             <Form>
-              <div>
+              <div className="mb-2 flex">
                 <Field
                   name="longUrl"
                   placeholder="Type or paste your link"
                   maxLength={2000}
                   disabled={submitted}
+                  className="w-full rounded-md bg-slate-800 p-2 text-slate-300"
                 />
               </div>
-              <div>
-                <div>
+              <div className="mb-2 flex flex-row gap-2">
+                <div className="w-1/2">
                   <Field
                     name="customAlias"
                     placeholder="alias"
                     disabled={submitted}
                     maxLength={128}
+                    className="w-full rounded-md bg-slate-800 p-2 text-slate-300"
                   />
                 </div>
-                <div>
+                <div className="w-1/2">
                   <Field
                     name="expireTime"
                     type="date"
                     placeholder="expiry date"
                     disabled={submitted}
+                    className="h-12 w-full rounded-md bg-slate-800 p-2 text-slate-300"
                   />
                 </div>
               </div>
+
               {!submitted ? (
                 <div>
                   <button
+                    className="w-full cursor-pointer rounded-md bg-indigo-700 p-2 text-slate-300"
                     type="submit"
                     disabled={isSubmitting || (!isValid && !dirty)}
                   >
@@ -139,13 +133,14 @@ const Home: NextPage = () => {
                   </button>
                 </div>
               ) : (
-                <div>
-                  <div>
+                <div className="flex gap-2">
+                  <div className="flex w-1/2 gap-2">
                     <button
                       onClick={(e) => {
                         e.preventDefault();
                         handleLaunch(values.longUrl);
                       }}
+                      className="w-full cursor-pointer rounded-md bg-blue-400 p-2 text-slate-300"
                     >
                       launch
                     </button>
@@ -154,12 +149,16 @@ const Home: NextPage = () => {
                         e.preventDefault();
                         handleCopy(values.longUrl);
                       }}
+                      className="w-full cursor-pointer rounded-md bg-green-600 p-2 text-slate-300"
                     >
                       {copied ? "Copied" : "Copy"}
                     </button>
                   </div>
-                  <div>
-                    <button onClick={() => handleShortenAnother(resetForm)}>
+                  <div className="flex w-1/2">
+                    <button
+                      onClick={() => handleShortenAnother(resetForm)}
+                      className="w-full cursor-pointer rounded-md bg-indigo-700 p-2 text-slate-300"
+                    >
                       Shorten another
                     </button>
                   </div>
