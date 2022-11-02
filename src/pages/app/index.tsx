@@ -3,9 +3,9 @@ import { useState } from "react";
 
 import type { FormikHelpers } from "formik";
 import { Field, Form, Formik } from "formik";
-import type { CreateRequest, CreateRequestErrors } from "../types/url.types";
-import { copyTextToClipboard } from "../utils/copyToClipboard";
-import { trpc } from "../utils/trpc";
+import type { CreateRequest, CreateRequestErrors } from "../../types/url.types";
+import { copyTextToClipboard } from "../../utils/copyToClipboard";
+import { trpc } from "../../utils/trpc";
 
 const initialFormValues: CreateRequest = {
   longUrl: "",
@@ -67,7 +67,6 @@ const Home: NextPage = () => {
             }: // setErrors,
             FormikHelpers<CreateRequest>
           ) => {
-            console.log("xxx");
             setError("");
             shorten.mutate(values, {
               onError: (error) => {

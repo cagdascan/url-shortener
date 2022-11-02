@@ -9,9 +9,12 @@
 const config = {
   reactStrictMode: true,
   swcMinify: true,
-  i18n: {
-    locales: ["en"],
-    defaultLocale: "en",
-  },
+  redirects: async () => [
+    {
+      source: '/',
+      destination: '/app',
+      permanent: true,
+    },
+  ]
 };
 export default config;
