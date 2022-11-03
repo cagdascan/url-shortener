@@ -22,7 +22,7 @@ const validateFunction = (values: CreateRequest) => {
   return errors;
 };
 
-const REDIRECT_HOST = "https://host";
+const REDIRECT_HOST = `${process.env.NEXT_PUBLIC_HOST}/u`;
 
 const Home: NextPage = () => {
   const [submitted, setSubmitted] = useState(false);
