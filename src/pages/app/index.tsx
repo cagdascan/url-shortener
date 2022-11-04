@@ -6,6 +6,7 @@ import { Field, Form, Formik } from "formik";
 import type { CreateRequest, CreateRequestErrors } from "../../types/url.types";
 import { copyTextToClipboard } from "../../utils/copyToClipboard";
 import { trpc } from "../../utils/trpc";
+import cx from "classnames";
 
 const initialFormValues: CreateRequest = {
   longUrl: "",
@@ -51,6 +52,32 @@ const Home: NextPage = () => {
     window.open(value, "_blank");
   };
 
+  const handleSubmit = (
+    values: CreateRequest,
+    { setSubmitting, setFieldValue }: FormikHelpers<CreateRequest>
+  ) => {
+    setError("");
+    shorten.mutate(values, {
+      onError: (error) => {
+        setError(error.message);
+      },
+      onSuccess: (data) => {
+        setFieldValue("longUrl", `${REDIRECT_HOST}/${data.shortened}`);
+        setFieldValue("customAlias", data.shortened);
+        setSubmitted(true);
+        // TODO: is this needed?
+        // addAlias({
+        //   alias: response.alias,
+        //   createdAt: new Date().toISOString(),
+        //   longUrl: values.longUrl,
+        // });
+      },
+      onSettled: () => {
+        setSubmitting(false);
+      },
+    });
+  };
+
   return (
     <div className="flex h-full min-h-screen w-full flex-col items-center justify-center bg-slate-900 pt-6 text-2xl text-slate-300">
       <div>Shorten your links</div>
@@ -59,37 +86,10 @@ const Home: NextPage = () => {
         <Formik
           initialValues={initialFormValues}
           validate={validateFunction}
-          onSubmit={(
-            values: CreateRequest,
-            {
-              setSubmitting,
-              setFieldValue,
-            }: // setErrors,
-            FormikHelpers<CreateRequest>
-          ) => {
-            setError("");
-            shorten.mutate(values, {
-              onError: (error) => {
-                setError(error.message);
-              },
-              onSuccess: (data) => {
-                setFieldValue("longUrl", `${REDIRECT_HOST}/${data.shortened}`);
-                setFieldValue("customAlias", data.shortened);
-                setSubmitted(true);
-                // TODO: is this needed?
-                // addAlias({
-                //   alias: response.alias,
-                //   createdAt: new Date().toISOString(),
-                //   longUrl: values.longUrl,
-                // });
-              },
-              onSettled: () => {
-                setSubmitting(false);
-              },
-            });
-          }}
+          onSubmit={handleSubmit}
+          validateOnBlur
         >
-          {({ values, isSubmitting, isValid, resetForm, dirty }) => (
+          {({ values, isSubmitting, isValid, resetForm, dirty, errors }) => (
             <Form>
               <div className="mb-2 flex">
                 <Field
@@ -97,7 +97,10 @@ const Home: NextPage = () => {
                   placeholder="Type or paste your link"
                   maxLength={2000}
                   disabled={submitted}
-                  className="w-full rounded-md bg-slate-800 p-2 text-slate-300"
+                  className={cx(
+                    { "!border-red-600": errors.longUrl },
+                    "text-slate-300, w-full rounded-md border-2 border-slate-800 bg-slate-800 p-2"
+                  )}
                 />
               </div>
               <div className="mb-2 flex flex-row gap-2">
@@ -124,7 +127,7 @@ const Home: NextPage = () => {
               {!submitted ? (
                 <div>
                   <button
-                    className="w-full cursor-pointer rounded-md bg-indigo-700 p-2 text-slate-300"
+                    className="w-full cursor-pointer rounded-md bg-indigo-700 p-2 text-slate-300 hover:bg-indigo-800 disabled:cursor-default disabled:bg-indigo-400"
                     type="submit"
                     disabled={isSubmitting || (!isValid && !dirty)}
                   >
