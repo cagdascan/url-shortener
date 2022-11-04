@@ -10,7 +10,11 @@ const getLongUrl = async (req: NextApiRequest, res: NextApiResponse) => {
   const data = await prisma.url.findFirst({
     where: { alias },
   });
-  res.status(200).json(data);
+  if (data) {
+    res.status(200).json(data);
+  } else {
+    res.status(404).json({ error: "Not found" });
+  }
 };
 
 export default getLongUrl;
